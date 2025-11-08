@@ -141,12 +141,18 @@ set_gamestate_to_wait_connect_continue_f3_handler()
 {
 	_asm {
 		mov eax, [esp+4]
-		cmp eax, 0x72 // F3
+		cmp eax, VK_F3
 		jnz nope
 		mov eax, hSamp
-		add eax, 0x26EA0C
+		add eax, 0x26EA0C // sampInfo
 		mov eax, [eax]
-		mov dword ptr [eax+0x3CD], 1
+		mov dword ptr [eax+0x3CD], 1 // state kind of thing, 1 means connecting
+
+		mov eax, [eax+0x3DE] // netgame
+		mov eax, [eax+8] // playerpool
+		mov eax, [eax+0x2A] // player
+		mov dword ptr [eax+0xF0], 0 // isSpawned (if we don't reset this, the controls in class selection won't show/work)
+		mov dword ptr [eax+0x306], 0 // hasRequestedInitialClass? (it works without this, but it seems safer to re-request class info (at least that's what I think this'll do))
 nope:
 		xor eax, eax
 		ret
@@ -160,6 +166,7 @@ rebind_f3_as_reconnect()
 	int *addr;
 	DWORD oldvp;
 
+	// this hooks the default case of the jumptable in OnWmKeyup, which handles VK 13-120
 	addr = (int*) ((int) hSamp + 0x614E0);
 	if (*addr != (int) hSamp + 0x614B0) {
 		addr = (int*) ((int) hSamp + 0x60FA0);
